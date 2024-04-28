@@ -3,6 +3,13 @@ import streamlit as st
 import plotly.express as px
 
 
+PERIODS = {
+   'Monthly': 1,
+   'Quarterly': 3,
+   'Annual': 12
+}
+
+
 def optimize(pm, tns, cns, cr, cap, oc, baseline) -> float:
     tr = oc + (pm * oc)
     ctc = (oc - cr)/(1 + (tns - cns))
@@ -10,7 +17,7 @@ def optimize(pm, tns, cns, cr, cap, oc, baseline) -> float:
     return (1./3.) * (ctc + (tr/tns) + baseline + 0.2 * cap)
 
 
-def simulate(pms, tns, cns, cr, cap, ocs, baseline):
+def simulate(pms, tns, cns, cr, cap, ocs, baseline, period):
   estimates = []
 
   for oc in ocs:
@@ -27,7 +34,7 @@ def simulate(pms, tns, cns, cr, cap, ocs, baseline):
         'current_revenue': cr,
         'competitor_average_price': cap,
         'baseline': baseline,
-        'price': min_price
+        'price': min_price * period
       })
 
   return pd.DataFrame(
@@ -35,7 +42,7 @@ def simulate(pms, tns, cns, cr, cap, ocs, baseline):
     columns=['Price', 'Operation Cost', 'Profit Margin']
     )
 
-
+period = st.sidebar.selectbox(label='Period', options=PERIODS.keys())
 targeted_no_sales = st.sidebar.number_input(label='Targeted No Sales', min_value=1)
 current_no_sales = st.sidebar.number_input(label='Current No Sales', min_value=0)
 current_revenue = st.sidebar.number_input(label='Current Revenue', min_value=0, step=500)
@@ -64,7 +71,8 @@ prices = simulate(
             cr=current_revenue,
             cap=competitor_average_price,
             ocs=range(operation_cost[0], operation_cost[1], 100),
-            baseline=baseline
+            baseline=baseline,
+            period=PERIODS[period]
           )
 
 fig = px.scatter(
@@ -77,7 +85,6 @@ fig = px.scatter(
 fig.update_traces(
    marker=dict(
        size=2,
-      #  symbol="arrow",
     )
 )
 
